@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { searchShipment } from "../services/shipmentServices"
+import ShipmentDetails from "../components/ShipmentDetails";
 
-export const Route = createFileRoute("/tracking")({
+export const Route = createFileRoute('/tracking')({
   component: Tracking,
-});
+})
 
 function Tracking() {
     const [trackingNumber, setTrackingNumber] = useState("");
@@ -53,53 +54,7 @@ const [error, setError] = useState("")
 )}
   
 
-{shipment && (
-  <div className="mt-6 rounded-lg border bg-gray-50 p-6">
-    <h2 className="mb-4 text-2xl font-bold">
-      Shipment Details
-    </h2>
-
-    <p>
-      <strong>Tracking Number:</strong>{" "}
-      {shipment.trackingNumber}
-    </p>
-
-    <p>
-      <strong>Sender:</strong>{" "}
-      {shipment.sender}
-    </p>
-
-    <p>
-      <strong>Receiver:</strong>{" "}
-      {shipment.receiver}
-    </p>
-
-    <p>
-      <p className="mt-2">
-  <strong>Status:</strong>
-
-  <span
-    className={`ml-2 rounded-full px-3 py-1 text-sm font-semibold text-white ${
-      shipment.status === "Delivered"
-        ? "bg-green-500"
-        : shipment.status === "In Transit"
-        ? "bg-yellow-500"
-        : "bg-red-500"
-    }`}
-  >
-    {shipment.status}
-  </span>
-</p>
-    </p>
-
-    <p>
-      <strong>Location:</strong>{" "}
-      {shipment.location}
-        <strong>Estimated Delivery:</strong>{" "}
-  {shipment.estimatedDelivery}
-    </p>
-  </div>
-)}
-    </div>
+{shipment && <ShipmentDetails shipment={shipment} />}
+</div>
   );
 }

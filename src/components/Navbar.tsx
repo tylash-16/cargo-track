@@ -18,13 +18,7 @@ export default function Navbar() {
           Tracking
         </Link>
 
-        <Link to="/about">
-          About
-        </Link>
-
-        <Link to="/contact">
-          Contact
-        </Link>
+        
       </div>
     </nav>
   );

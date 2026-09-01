@@ -65,6 +65,40 @@ export const shipments = [
 
 export function searchShipment(trackingNumber: string) {
   return shipments.find(
-    (shipment) => shipment.trackingNumber === trackingNumber
-  )
+    (shipment) =>
+      shipment.trackingNumber.trim().toLowerCase() ===
+      trackingNumber.trim().toLowerCase()
+  );
 }
+export function addShipment(shipment: any) {
+  // Angalia kama tracking number ipo tayari
+  const exists = shipments.find(
+    (item) => item.trackingNumber === shipment.trackingNumber
+  );
+
+  if (exists) {
+    return false;
+  }
+
+  // Ongeza shipment mpya
+  shipments.push({
+    ...shipment,
+    history: [
+      {
+        date: new Date().toISOString().split("T")[0],
+        time: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        status: shipment.status,
+      },
+    ],
+  });
+
+  return true;
+}
+
+
+
+
+
