@@ -2,7 +2,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import type { SyntheticEvent } from "react";
-import { addShipment, shipments } from "../services/shipmentServices";
+import {
+  addShipment,
+  updateShipment,
+  deleteShipment,
+  shipments,
+} from "../services/shipmentServices";
 
 export const Route = createFileRoute("/admin")({
   component: Admin,
@@ -21,6 +26,36 @@ function Admin() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [list, setList] = useState(() => shipments.slice());
+  const [editing, setEditing] = useState(false);
+  const [editingTracking, setEditingTracking] = useState("");
+
+  const handleEdit = (shipment: any) => {
+  setFormData({
+    trackingNumber: shipment.trackingNumber,
+    sender: shipment.sender,
+    receiver: shipment.receiver,
+    location: shipment.location,
+    status: shipment.status,
+    estimatedDelivery: shipment.estimatedDelivery,
+  });
+
+  setEditing(true);
+  setEditingTracking(shipment.trackingNumber);
+};
+const handleDelete = (trackingNumber: string) => {
+  const confirmed = window.confirm(
+    "Are you sure you want to delete this shipment?"
+  );
+
+  if (!confirmed) return;
+
+  deleteShipment(trackingNumber);
+
+  setList(shipments.slice());
+
+  setMessage("Shipment deleted successfully.");
+  setError("");
+};
 
   const handleSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -34,8 +69,15 @@ function Admin() {
       setMessage("");
       return;
     }
+    
 
-    const success = addShipment(formData);
+     let success;
+
+    if (editing) {
+    success = updateShipment(editingTracking, formData);
+    } else {
+      success = addShipment(formData);
+   }
 
     if (!success) {
       setError("Tracking Number already exists.");
@@ -43,8 +85,16 @@ function Admin() {
       return;
     }
 
+    if (editing) {
+    setMessage("Shipment updated successfully.");
+    } else {
     setMessage("Shipment saved successfully.");
-    setError("");
+  }
+
+setError("");
+
+    setEditing(false);
+    setEditingTracking("");
 
     setFormData({
       trackingNumber: "",
@@ -162,7 +212,7 @@ function Admin() {
           type="submit"
           className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700"
         >
-          Save Shipment
+          {editing ? "Update Shipment" : "Save Shipment"}
         </button>
       </form>
             <div className="mt-8">
@@ -179,6 +229,7 @@ function Admin() {
                 <th className="border p-3 text-left">Receiver</th>
                 <th className="border p-3 text-left">Status</th>
                 <th className="border p-3 text-left">Location</th>
+                <th className="border p-3 text-center">Actions</th>
               </tr>
             </thead>
 
@@ -204,6 +255,21 @@ function Admin() {
                   <td className="border p-3">
                     {shipment.location}
                   </td>
+                 <td className="border p-3 text-center">
+  <button
+    onClick={() => handleEdit(shipment)}
+    className="mr-2 rounded bg-yellow-500 px-3 py-1 text-white hover:bg-yellow-600"
+  >
+    Edit
+  </button>
+
+    <button
+  onClick={() => handleDelete(shipment.trackingNumber)}
+  className="rounded bg-red-600 px-3 py-1 text-white hover:bg-red-700"
+>
+  Delete
+</button>
+      </td>
                 </tr>
               ))}
             </tbody>

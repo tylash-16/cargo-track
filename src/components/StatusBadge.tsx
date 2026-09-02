@@ -3,16 +3,33 @@ type Props = {
 };
 
 export default function StatusBadge({ status }: Props) {
-  const color =
-    status === "Delivered"
-      ? "bg-green-500"
-      : status === "In Transit"
-      ? "bg-yellow-500"
-      : "bg-red-500";
+  let color = "bg-gray-500";
+
+  switch (status) {
+    case "Picked Up":
+      color = "bg-blue-500";
+      break;
+
+    case "Warehouse":
+      color = "bg-yellow-500";
+      break;
+
+    case "In Transit":
+      color = "bg-indigo-600";
+      break;
+
+    case "Out for Delivery":
+      color = "bg-orange-500";
+      break;
+
+    case "Delivered":
+      color = "bg-green-600";
+      break;
+  }
 
   return (
     <span
-      className={`ml-2 rounded-full px-3 py-1 text-sm font-semibold text-white ${color}`}
+      className={`${color} rounded-full px-3 py-1 text-sm font-semibold text-white`}
     >
       {status}
     </span>
