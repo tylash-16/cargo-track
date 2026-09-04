@@ -1,5 +1,6 @@
 
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { isLoggedIn } from "../services/authService";
 import { useState } from "react";
 import type { SyntheticEvent } from "react";
 import {
@@ -10,6 +11,14 @@ import {
 } from "../services/shipmentServices";
 
 export const Route = createFileRoute("/admin")({
+  beforeLoad: () => {
+    if (!isLoggedIn()) {
+      throw redirect({
+        to: "/login",
+      });
+    }
+  },
+
   component: Admin,
 });
 
@@ -28,6 +37,74 @@ function Admin() {
   const [list, setList] = useState(() => shipments.slice());
   const [editing, setEditing] = useState(false);
   const [editingTracking, setEditingTracking] = useState("");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [sortBy, setSortBy] = useState("Latest");
+  const [currentPage, setCurrentPage] = useState(1);
+
+const itemsPerPage = 5;
+  const totalShipments = list.length;
+
+const deliveredCount = list.filter(
+  (shipment: any) => shipment.status === "Delivered"
+).length;
+
+const transitCount = list.filter(
+  (shipment: any) => shipment.status === "In Transit"
+).length;
+
+const pickedUpCount = list.filter(
+  (shipment: any) => shipment.status === "Picked Up"
+).length;
+  const filteredShipments = list
+  .filter((shipment: any) => {
+    const matchesSearch =
+      shipment.trackingNumber
+        .toLowerCase()
+        .includes(search.toLowerCase()) ||
+      shipment.sender
+        .toLowerCase()
+        .includes(search.toLowerCase()) ||
+      shipment.receiver
+        .toLowerCase()
+        .includes(search.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === "All" ||
+      shipment.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  })
+  .sort((a: any, b: any) => {
+    if (sortBy === "A-Z") {
+      return a.trackingNumber.localeCompare(b.trackingNumber);
+    }
+
+    if (sortBy === "Z-A") {
+      return b.trackingNumber.localeCompare(a.trackingNumber);
+    }
+
+    if (sortBy === "Sender") {
+      return a.sender.localeCompare(b.sender);
+    }
+
+    if (sortBy === "Status") {
+      return a.status.localeCompare(b.status);
+    }
+
+    return 0;
+  });
+
+const totalPages = Math.ceil(
+  filteredShipments.length / itemsPerPage
+);
+
+const startIndex = (currentPage - 1) * itemsPerPage;
+
+const paginatedShipments = filteredShipments.slice(
+  startIndex,
+  startIndex + itemsPerPage
+);
 
   const handleEdit = (shipment: any) => {
   setFormData({
@@ -55,6 +132,11 @@ const handleDelete = (trackingNumber: string) => {
 
   setMessage("Shipment deleted successfully.");
   setError("");
+};
+
+const handleLogout = () => {
+  localStorage.removeItem("isLoggedIn");
+  window.location.href = "/login";
 };
 
   const handleSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
@@ -110,15 +192,44 @@ setError("");
 
   return (
     <div className="mx-auto mt-10 max-w-5xl rounded-xl bg-white p-8 shadow-lg">
-      <h1 className="mb-6 text-center text-3xl font-bold">
-        CargoTrack Admin Dashboard
-      </h1>
+      <div className="mb-6 flex items-center justify-between">
+  <h1 className="text-3xl font-bold">
+    CargoTrack Admin Dashboard
+  </h1>
+
+  <button
+    onClick={handleLogout}
+    className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+  >
+    Logout
+    </button>
+     </div>
+
+      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-4">
+        <div className="rounded-lg bg-blue-600 p-5 text-white shadow">
+          <h3 className="text-lg font-semibold">Total Shipments</h3>
+          <p className="mt-2 text-3xl font-bold">{totalShipments}</p>
+        </div>
+
+        <div className="rounded-lg bg-yellow-500 p-5 text-white shadow">
+          <h3 className="text-lg font-semibold">In Transit</h3>
+          <p className="mt-2 text-3xl font-bold">{transitCount}</p>
+        </div>
+
+        <div className="rounded-lg bg-green-600 p-5 text-white shadow">
+          <h3 className="text-lg font-semibold">Delivered</h3>
+          <p className="mt-2 text-3xl font-bold">{deliveredCount}</p>
+        </div>
+
+        <div className="rounded-lg bg-purple-600 p-5 text-white shadow">
+          <h3 className="text-lg font-semibold">Picked Up</h3>
+          <p className="mt-2 text-3xl font-bold">{pickedUpCount}</p>
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="rounded-lg bg-red-100 p-3 text-red-700">
-            {error}
-          </div>
+          <div className="rounded-lg bg-red-100 p-3 text-red-700">{error}</div>
         )}
 
         {message && (
@@ -215,10 +326,44 @@ setError("");
           {editing ? "Update Shipment" : "Save Shipment"}
         </button>
       </form>
-            <div className="mt-8">
-        <h2 className="mb-4 text-2xl font-bold">
-          All Shipments
-        </h2>
+
+      <div className="mt-8">
+        <h2 className="mb-4 text-2xl font-bold">All Shipments</h2>
+
+        <div className="mb-4 flex gap-4">
+          <input
+            type="text"
+            placeholder="Search shipment..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 rounded-lg border p-3"
+          />
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded-lg border p-3"
+          >
+            <option>All</option>
+            <option>Picked Up</option>
+            <option>In Transit</option>
+            <option>Warehouse</option>
+            <option>Out for Delivery</option>
+            <option>Delivered</option>
+          </select>
+
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="rounded-lg border p-3"
+          >
+            <option>Latest</option>
+            <option>A-Z</option>
+            <option>Z-A</option>
+            <option>Sender</option>
+            <option>Status</option>
+          </select>
+        </div>
 
         <div className="overflow-x-auto">
           <table className="min-w-full border">
@@ -234,46 +379,58 @@ setError("");
             </thead>
 
             <tbody>
-              {list.map((shipment: any) => (
+              {paginatedShipments.map((shipment: any) => (
                 <tr key={shipment.trackingNumber}>
-                  <td className="border p-3">
-                    {shipment.trackingNumber}
+                  <td className="border p-3">{shipment.trackingNumber}</td>
+                  <td className="border p-3">{shipment.sender}</td>
+                  <td className="border p-3">{shipment.receiver}</td>
+                  <td className="border p-3">{shipment.status}</td>
+                  <td className="border p-3">{shipment.location}</td>
+                  <td className="border p-3 text-center">
+                    <button
+                      onClick={() => handleEdit(shipment)}
+                      className="mr-2 rounded bg-yellow-500 px-3 py-1 text-white hover:bg-yellow-600"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(shipment.trackingNumber)}
+                      className="rounded bg-red-600 px-3 py-1 text-white hover:bg-red-700"
+                    >
+                      Delete
+                    </button>
                   </td>
-
-                  <td className="border p-3">
-                    {shipment.sender}
-                  </td>
-
-                  <td className="border p-3">
-                    {shipment.receiver}
-                  </td>
-
-                  <td className="border p-3">
-                    {shipment.status}
-                  </td>
-
-                  <td className="border p-3">
-                    {shipment.location}
-                  </td>
-                 <td className="border p-3 text-center">
-  <button
-    onClick={() => handleEdit(shipment)}
-    className="mr-2 rounded bg-yellow-500 px-3 py-1 text-white hover:bg-yellow-600"
-  >
-    Edit
-  </button>
-
-    <button
-  onClick={() => handleDelete(shipment.trackingNumber)}
-  className="rounded bg-red-600 px-3 py-1 text-white hover:bg-red-700"
->
-  Delete
-</button>
-      </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          <div className="mt-4 flex items-center justify-between">
+  <button
+    onClick={() =>
+      setCurrentPage((page) => Math.max(page - 1, 1))
+    }
+    disabled={currentPage === 1}
+    className="rounded bg-gray-600 px-4 py-2 text-white disabled:opacity-50"
+  >
+    Previous
+  </button>
+
+  <span className="font-semibold">
+    Page {currentPage} of {totalPages || 1}
+  </span>
+
+  <button
+    onClick={() =>
+      setCurrentPage((page) => Math.min(page + 1, totalPages))
+    }
+    disabled={
+      currentPage === totalPages || totalPages === 0
+    }
+    className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
+  >
+    Next
+  </button>
+    </div>
         </div>
       </div>
     </div>
