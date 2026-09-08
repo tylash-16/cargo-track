@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import type { Shipment } from "../types/shipment";
 import { searchShipment } from "../services/shipmentServices";
 import StatusBadge from "../components/StatusBadge";
 import ShipmentProgress from "../components/ShipmentProgress";
@@ -11,11 +12,11 @@ export const Route = createFileRoute("/tracking")({
 
 function Tracking() {
   const [trackingNumber, setTrackingNumber] = useState("");
-  const [shipment, setShipment] = useState<any>(null);
+  const [shipment, setShipment] = useState<Shipment | null>(null);
   const [error, setError] = useState("");
 
-  const handleSearch = () => {
-    const result = searchShipment(trackingNumber);
+  const handleSearch = async() => {
+    const result = await searchShipment(trackingNumber);
 
     if (!result) {
       setShipment(null);
@@ -99,7 +100,7 @@ function Tracking() {
 </h3>
 
 <div className="space-y-4">
-  {shipment.history.map((item: any, index: number) => (
+  {shipment.history.map((item, index) => (
     <div
       key={index}
       className="flex items-center justify-between rounded-lg border p-4"

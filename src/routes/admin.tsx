@@ -1,13 +1,13 @@
 
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { isLoggedIn } from "../services/authService";
-import { useState } from "react";
+import { useEffect,useState } from "react";
 import type { SyntheticEvent } from "react";
 import {
+  getShipments,
   addShipment,
   updateShipment,
   deleteShipment,
-  shipments,
 } from "../services/shipmentServices";
 
 export const Route = createFileRoute("/admin")({
@@ -34,7 +34,7 @@ function Admin() {
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [list, setList] = useState(() => shipments.slice());
+  const [list, setList] = useState<any[]>([]);
   const [editing, setEditing] = useState(false);
   const [editingTracking, setEditingTracking] = useState("");
   const [search, setSearch] = useState("");
@@ -43,6 +43,14 @@ function Admin() {
   const [currentPage, setCurrentPage] = useState(1);
 
 const itemsPerPage = 5;
+useEffect(() => {
+  loadShipments();
+}, []);
+
+async function loadShipments() {
+  const data = await getShipments();
+  setList(data);
+}
   const totalShipments = list.length;
 
 const deliveredCount = list.filter(
