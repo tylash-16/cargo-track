@@ -1,6 +1,6 @@
 const steps = [
-  "Picked Up",
-  "Warehouse",
+  "Package Received",
+  "Departed Warehouse",
   "In Transit",
   "Out for Delivery",
   "Delivered",
