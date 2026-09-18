@@ -17,27 +17,40 @@ export async function getShipments() {
 }
 
 // Search shipment
+// Search shipment
 export async function searchShipment(trackingNumber: string) {
+  console.log("Searching:", trackingNumber);
+
   const { data, error } = await supabase
     .from("shipments")
     .select("*")
-    .eq("tracking_number", trackingNumber)
-    .single();
+    .eq("tracking_number", trackingNumber.trim())
+    .limit(1);
+
+  console.log("DATA:", data);
+  console.log("ERROR:", error);
 
   if (error) {
-  return null;
+    return null;
+  }
+
+  if (!data || data.length === 0) {
+    return null;
+  }
+
+  const shipment = data[0];
+
+  return {
+    trackingNumber: shipment.tracking_number,
+    sender: shipment.sender,
+    receiver: shipment.receiver,
+    location: shipment.location,
+    status: shipment.status,
+    estimatedDelivery: shipment.estimated_delivery,
+    history: shipment.history,
+  };
 }
 
-return {
-  trackingNumber: data.tracking_number,
-  sender: data.sender,
-  receiver: data.receiver,
-  location: data.location,
-  status: data.status,
-  estimatedDelivery: data.estimated_delivery,
-  history: data.history,
-};
-}
 
 // Add shipment
 export async function addShipment(shipment: Shipment) {
@@ -63,10 +76,44 @@ export async function addShipment(shipment: Shipment) {
 }
 
 // Update shipment
+// Update shipment
 export async function updateShipment(
   trackingNumber: string,
   shipment: Shipment
 ) {
+  // Get current shipment first
+  const { data: currentShipment, error: fetchError } = await supabase
+    .from("shipments")
+    .select("*")
+    .eq("tracking_number", trackingNumber)
+    .limit(1);
+
+  if (fetchError || !currentShipment || currentShipment.length === 0) {
+    console.error("Failed to find shipment:", fetchError);
+    return false;
+  }
+
+  const existing = currentShipment[0];
+
+  // Keep existing history
+  const history = Array.isArray(existing.history)
+    ? [...existing.history]
+    : [];
+
+  // Add new history only when status has changed
+  if (existing.status !== shipment.status) {
+    const now = new Date();
+
+    history.push({
+      date: now.toISOString().split("T")[0],
+      time: now.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      status: shipment.status,
+    });
+  }
+
   const { error } = await supabase
     .from("shipments")
     .update({
@@ -75,13 +122,14 @@ export async function updateShipment(
       location: shipment.location,
       status: shipment.status,
       estimated_delivery: shipment.estimatedDelivery,
-      history: shipment.history,
+      history: history,
     })
     .eq("tracking_number", trackingNumber);
 
+  console.log("UPDATE ERROR:", error);
+
   return !error;
 }
-
 // Delete shipment
 export async function deleteShipment(trackingNumber: string) {
   const { error } = await supabase
